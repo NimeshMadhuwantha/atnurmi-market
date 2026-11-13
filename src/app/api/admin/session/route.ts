@@ -1,0 +1,6 @@
+import { createHash, timingSafeEqual } from "node:crypto";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+function equalSecret(input:string,expected:string){const a=createHash("sha256").update(input).digest();const b=createHash("sha256").update(expected).digest();return timingSafeEqual(a,b)}
+export async function POST(request:Request){const body=await request.json().catch(()=>null) as {email?:string;password?:string}|null;const email=process.env.ADMIN_EMAIL;const password=process.env.ADMIN_PASSWORD;const secret=process.env.ADMIN_SESSION_SECRET;if(!email||!password||!secret)return NextResponse.json({error:"Admin access is not configured."},{status:503});if(!body?.email||!body.password||!equalSecret(body.email.toLowerCase(),email.toLowerCase())||!equalSecret(body.password,password))return NextResponse.json({error:"Invalid administrator credentials."},{status:401});const expires=Date.now()+8*60*60*1000;const token=createHash("sha256").update(`${email}:${expires}:${secret}`).digest("hex");const store=await cookies();store.set("atnurmi_admin",`${expires}.${token}`,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",path:"/NurAdm",maxAge:8*60*60});return NextResponse.json({ok:true})}
+

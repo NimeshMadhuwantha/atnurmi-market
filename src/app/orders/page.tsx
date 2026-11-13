@@ -1,0 +1,6 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+import { ArrowIcon, PackageIcon } from "@/components/icons";
+
+export const metadata: Metadata = { title: "Your Orders", robots: { index: false, follow: false } };
+export default function OrdersPage() { return <main className="page-main account-page"><header className="account-header"><p className="eyebrow">YOUR COLLECTION</p><h1>Orders</h1><div><Link href="/cart" className="text-link">Go to cart <ArrowIcon size={16}/></Link><Link href="/wishlist" className="text-link">View wishlist <ArrowIcon size={16}/></Link></div></header><section className="empty-state order-empty"><div className="empty-icon"><PackageIcon size={48}/></div><p className="eyebrow">NOTHING ON THE WAY — YET</p><h2>Your first original is<br/>waiting to be found.</h2><p>When you place an order, delivery progress and artist updates will appear here.</p><Link href="/explore" className="button primary large">Explore original art <ArrowIcon size={18}/></Link><div className="order-steps"><span><b>01</b>Order confirmed</span><i/><span><b>02</b>Artist prepares</span><i/><span><b>03</b>Safely delivered</span><i/><span><b>04</b>Rate your experience</span></div></section></main>; }
