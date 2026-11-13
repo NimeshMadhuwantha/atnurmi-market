@@ -29,6 +29,12 @@ const nextConfig: NextConfig = {
   },
   poweredByHeader: false,
   compress: true,
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "firebasestorage.googleapis.com" },
+      { protocol: "https", hostname: "storage.googleapis.com" },
+    ],
+  },
   async headers() {
     return [{ source: "/(.*)", headers: [
       { key: "Content-Security-Policy", value: contentSecurityPolicy },
