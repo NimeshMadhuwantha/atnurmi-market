@@ -2,9 +2,13 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && request.auth.token.admin == true; }
     function imageUnder1Mb() { return request.resource.size < 1024 * 1024 && request.resource.contentType.matches('image/(webp|jpeg|png)'); }
     match /profiles/{uid}/{file} { allow read: if true; allow write: if signedIn() && request.auth.uid == uid && imageUnder1Mb(); }
-    match /artworks/{uid}/{file} { allow read: if true; allow write: if signedIn() && request.auth.uid == uid && request.auth.token.role == 'artist' && imageUnder1Mb(); }
+    match /artworks/{uid}/{artworkId}/{file} {
+      allow read: if firestore.get(/databases/(default)/documents/artworks/$(artworkId)).data.status == 'published' || (signedIn() && request.auth.uid == uid) || isAdmin();
+      allow write: if signedIn() && request.auth.uid == uid && request.auth.token.role == 'artist' && imageUnder1Mb();
+    }
     match /{allPaths=**} { allow read, write: if false; }
   }
 }

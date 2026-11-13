@@ -14,6 +14,7 @@ export type Artwork = {
   description: string;
   tone: string;
   note?: string;
+  imageUrls?: string[];
 };
 
 export type Artist = {
@@ -38,7 +39,7 @@ export const categories = [
   "Digital Art",
 ] as const;
 
-export const artworks: Artwork[] = [
+export const demoArtworks: Artwork[] = [
   {
     id: "blue-hour-coast",
     name: "Blue Hour Coast",
@@ -137,6 +138,9 @@ export const artworks: Artwork[] = [
     tone: "earth",
   },
 ];
+
+/** Development-only fallback used until Firebase is configured or when it is offline. */
+export const artworks = demoArtworks;
 
 export const artists: Artist[] = [
   { id: "ari-senara", name: "Ari Senara", initials: "AS", rating: 4.9, reviews: 50, specialties: ["Original Art", "Canvas"], location: "Galle, Sri Lanka", whatsapp: "94769963432", tone: "ocean" },

@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { ArtCard } from "@/components/art-card";
 import { ImagePlaceholder } from "@/components/image-placeholder";
 import { ArrowIcon, CheckIcon, StarIcon } from "@/components/icons";
-import { artworks } from "@/lib/data";
+import { FeaturedArtworks } from "@/components/featured-artworks";
 
 const categoryDetails = [
   ["Canvas Art", "Original texture, presence, and colour", "ocean"],
@@ -23,7 +22,7 @@ export default function Home() {
 
       <section className="section category-section"><div className="section-heading split"><div><p className="eyebrow">FIND YOUR MEDIUM</p><h2>Explore art, your way.</h2></div><Link href="/explore" className="text-link">View every category <ArrowIcon size={17}/></Link></div><div className="category-grid">{categoryDetails.map(([name, copy, tone], index) => <Link href={`/explore?category=${encodeURIComponent(name)}`} key={name} className="category-card"><ImagePlaceholder label={`${name} category`} tone={tone}/><div><span>0{index + 1}</span><h3>{name}</h3><p>{copy}</p><i><ArrowIcon/></i></div></Link>)}</div></section>
 
-      <section className="section featured-section"><div className="section-heading split"><div><p className="eyebrow">CURATOR&apos;S EDIT</p><h2>Featured originals.</h2><p>Distinctive work selected for its craft, story, and presence.</p></div><div className="collection-stat"><strong>06</strong><span>works in this week’s edit</span></div></div><div className="art-grid">{artworks.slice(0,4).map((art) => <ArtCard key={art.id} art={art}/>)}</div><div className="center-action"><Link href="/explore" className="button outline">View all artwork <ArrowIcon size={17}/></Link></div></section>
+      <section className="section featured-section"><div className="section-heading split"><div><p className="eyebrow">CURATOR&apos;S EDIT</p><h2>Featured originals.</h2><p>Distinctive work selected for its craft, story, and presence.</p></div><div className="collection-stat"><strong>20</strong><span>latest seller works in the live edit</span></div></div><FeaturedArtworks/><div className="center-action"><Link href="/explore" className="button outline">View all artwork <ArrowIcon size={17}/></Link></div></section>
 
       <section className="commission-section"><div className="commission-image"><ImagePlaceholder label="Artist creating a custom portrait" tone="graphite"/><div className="image-caption"><span>01</span><p>From your story<br/>to their canvas.</p></div></div><div className="commission-copy"><p className="eyebrow">COMMISSION SOMETHING PERSONAL</p><h2>Your idea.<br/><em>An artist’s hand.</em><br/>One original.</h2><p>Turn a memory, person, place, or imagined world into a piece that exists nowhere else. Share your idea directly with an artist whose style feels right.</p><ul><li><CheckIcon/> Choose a specialist by medium</li><li><CheckIcon/> Discuss the concept on WhatsApp</li><li><CheckIcon/> Approve the direction before creation</li></ul><Link href="/artist-gigs" className="button light">Meet commission artists <ArrowIcon size={18}/></Link></div></section>
 
