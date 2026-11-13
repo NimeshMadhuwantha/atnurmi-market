@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function owns(uid) { return signedIn() && request.auth.uid == uid; }
+    function isArtist() { return signedIn() && request.auth.token.role == 'artist'; }
+    function isAdmin() { return signedIn() && request.auth.token.admin == true; }
+    function validArtwork() { return request.resource.data.keys().hasAll(['artistId','name','price','category','status']) && request.resource.data.name is string && request.resource.data.price is number && request.resource.data.price > 0; }
+    match /artworks/{artId} { allow read: if resource.data.status == 'published' || isAdmin() || (isArtist() && resource.data.artistId == request.auth.uid); allow create: if isArtist() && request.resource.data.artistId == request.auth.uid && validArtwork(); allow update: if isAdmin() || (isArtist() && resource.data.artistId == request.auth.uid && validArtwork()); allow delete: if isAdmin() || (isArtist() && resource.data.artistId == request.auth.uid); }
+    match /users/{uid} { allow create, read, update: if owns(uid); allow read, write: if isAdmin(); }
+    match /artists/{uid} { allow read: if true; allow write: if isAdmin() || (owns(uid) && isArtist()); }
+    match /orders/{orderId} { allow create: if signedIn() && request.resource.data.buyerId == request.auth.uid; allow read: if signedIn() && (resource.data.buyerId == request.auth.uid || resource.data.artistId == request.auth.uid) || isAdmin(); allow update: if isAdmin() || (signedIn() && (resource.data.buyerId == request.auth.uid || resource.data.artistId == request.auth.uid)); allow delete: if isAdmin(); }
+    match /artistApplications/{id} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid); allow update, delete: if isAdmin(); }
+    match /feedback/{id} { allow create: if signedIn() && request.resource.data.buyerId == request.auth.uid; allow read: if resource.data.status == 'approved' || isAdmin(); allow update, delete: if isAdmin(); }
+    match /counters/{id} { allow read: if signedIn(); allow write: if false; }
+    match /{document=**} { allow read, write: if false; }
+  }
+}
+
