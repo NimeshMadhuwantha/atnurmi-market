@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowIcon, BagIcon, CheckIcon, HeartIcon, PackageIcon } from "@/components/icons";
+import { ArrowIcon, CartIcon, CheckIcon, HeartIcon, PackageIcon } from "@/components/icons";
 
 export const metadata: Metadata = { title: "Your Orders", robots: { index: false, follow: false } };
 
@@ -9,7 +9,7 @@ export default function OrdersPage() {
     <header className="account-header orders-header">
       <div><p className="eyebrow">YOUR COLLECTION</p><h1>Orders</h1><p>Follow every original from the artist&apos;s studio to your door.</p></div>
       <div className="order-header-actions">
-        <Link href="/cart" className="order-shortcut"><span><BagIcon size={20}/></span><div><small>Ready to order?</small><strong>Go to cart</strong></div><ArrowIcon size={17}/></Link>
+        <Link href="/cart" className="order-shortcut"><span><CartIcon size={20}/></span><div><small>Ready to order?</small><strong>Go to cart</strong></div><ArrowIcon size={17}/></Link>
         <Link href="/wishlist" className="order-shortcut"><span><HeartIcon size={20}/></span><div><small>Saved pieces</small><strong>View wishlist</strong></div><ArrowIcon size={17}/></Link>
       </div>
     </header>

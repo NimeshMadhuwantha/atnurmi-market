@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { BagIcon, HeartIcon, MenuIcon, MoonIcon, SunIcon, UserIcon, XIcon } from "./icons";
+import { CartIcon, HeartIcon, MenuIcon, MoonIcon, SunIcon, UserIcon, XIcon } from "./icons";
 import { useApp } from "./app-provider";
 
 const customerLinks = [
@@ -28,7 +28,7 @@ export function Header() {
         <button className="icon-button theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}>{theme === "dark" ? <SunIcon /> : <MoonIcon />}</button>
         {role !== "artist" && <>
           <Link className="icon-button badge-wrap" href="/wishlist" aria-label="Wishlist"><HeartIcon />{wishlist.length > 0 && <b>{wishlist.length}</b>}</Link>
-          <Link className="icon-button badge-wrap" href="/cart" aria-label="Cart"><BagIcon />{cart.length > 0 && <b>{cart.length}</b>}</Link>
+          <Link className="icon-button badge-wrap" href="/cart" aria-label="Cart"><CartIcon />{cart.length > 0 && <b>{cart.length}</b>}</Link>
         </>}
         {role === "guest" ? <button className="signin-button" onClick={() => setAuthOpen(true)}><UserIcon size={18} /> <span>Sign in</span></button> : <Link href="/settings" className="profile-chip"><span>{role === "artist" ? "AS" : "M"}</span><small>{role === "artist" ? "Ari" : "My profile"}</small></Link>}
         <button className="icon-button menu-button" onClick={() => setOpen(!open)} aria-label="Toggle menu">{open ? <XIcon /> : <MenuIcon />}</button>
