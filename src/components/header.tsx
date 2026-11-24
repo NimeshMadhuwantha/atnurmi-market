@@ -1,9 +1,10 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { BagIcon, HeartIcon, MenuIcon, MoonIcon, SunIcon, UserIcon, XIcon } from "./icons";
+import { CartIcon, HeartIcon, MenuIcon, MoonIcon, SunIcon, UserIcon, XIcon } from "./icons";
 import { useApp } from "./app-provider";
 
 const customerLinks = [
@@ -14,9 +15,13 @@ const artistLinks = [["Dashboard", "/dashboard"], ["Orders", "/seller/orders"], 
 
 export function Header() {
   const pathname = usePathname();
-  const { role, theme, toggleTheme, setAuthOpen, cart, wishlist } = useApp();
+  const { role, user, profile, theme, toggleTheme, setAuthOpen, cart, wishlist } = useApp();
   const [open, setOpen] = useState(false);
   const links = role === "artist" ? artistLinks : customerLinks;
+  const displayName = (profile?.displayName || user?.displayName || "").trim();
+  const firstName = displayName.split(/\s+/)[0] || "My profile";
+  const avatarUrl = profile?.photoUrl || user?.photoURL || "";
+  const avatarFallback = (displayName || user?.email || "U")[0].toUpperCase();
 
   return (
     <header className="site-header">
@@ -28,9 +33,9 @@ export function Header() {
         <button className="icon-button theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}>{theme === "dark" ? <SunIcon /> : <MoonIcon />}</button>
         {role !== "artist" && <>
           <Link className="icon-button badge-wrap" href="/wishlist" aria-label="Wishlist"><HeartIcon />{wishlist.length > 0 && <b>{wishlist.length}</b>}</Link>
-          <Link className="icon-button badge-wrap" href="/cart" aria-label="Cart"><BagIcon />{cart.length > 0 && <b>{cart.length}</b>}</Link>
+          <Link className="icon-button badge-wrap" href="/cart" aria-label="Cart"><CartIcon />{cart.length > 0 && <b>{cart.length}</b>}</Link>
         </>}
-        {role === "guest" ? <button className="signin-button" onClick={() => setAuthOpen(true)}><UserIcon size={18} /> <span>Sign in</span></button> : <Link href="/settings" className="profile-chip"><span>{role === "artist" ? "AS" : "M"}</span><small>{role === "artist" ? "Ari" : "My profile"}</small></Link>}
+        {role === "guest" ? <button className="signin-button" onClick={() => setAuthOpen(true)}><UserIcon size={18} /> <span>Sign in</span></button> : <Link href="/settings" className="profile-chip"><span>{avatarUrl ? <img src={avatarUrl} alt={`${displayName || "User"} profile`}/> : avatarFallback}</span><small>{firstName}</small></Link>}
         <button className="icon-button menu-button" onClick={() => setOpen(!open)} aria-label="Toggle menu">{open ? <XIcon /> : <MenuIcon />}</button>
       </div>
     </header>

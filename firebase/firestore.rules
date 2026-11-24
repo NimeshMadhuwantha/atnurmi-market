@@ -4,33 +4,86 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function owns(uid) { return signedIn() && request.auth.uid == uid; }
     function isArtist() { return signedIn() && request.auth.token.role == 'artist'; }
+    function isActiveArtist() {
+      return isArtist()
+        && exists(/databases/$(database)/documents/artists/$(request.auth.uid))
+        && get(/databases/$(database)/documents/artists/$(request.auth.uid)).data.status == 'active'
+        && get(/databases/$(database)/documents/artists/$(request.auth.uid)).data.blocked == false;
+    }
     function isAdmin() { return signedIn() && request.auth.token.admin == true; }
-    function validArtwork() { return request.resource.data.keys().hasAll(['artistId','name','price','category','status']) && request.resource.data.name is string && request.resource.data.price is number && request.resource.data.price > 0; }
-    match /artworks/{artId} { allow read: if resource.data.status == 'published' || isAdmin() || (isArtist() && resource.data.artistId == request.auth.uid); allow create: if isArtist() && request.resource.data.artistId == request.auth.uid && validArtwork(); allow update: if isAdmin() || (isArtist() && resource.data.artistId == request.auth.uid && validArtwork()); allow delete: if isAdmin() || (isArtist() && resource.data.artistId == request.auth.uid); }
+    function validRating(value) { return value is int && value >= 1 && value <= 5; }
+    function validArtistTransition(before, after) {
+      return (before == 'pending' && after == 'confirmed')
+        || (before == 'confirmed' && after == 'processing')
+        || (before == 'processing' && after == 'dispatched')
+        || (before == 'dispatched' && after == 'delivered');
+    }
+    function feedbackOrderIsEligible(orderId, artistId) {
+      let order = getAfter(/databases/$(database)/documents/orders/$(orderId));
+      return order.data.buyerId == request.auth.uid
+        && order.data.artistId == artistId
+        && order.data.status == 'received'
+        && order.data.feedbackSubmitted == true;
+    }
     match /users/{uid} {
       allow read: if owns(uid) || isAdmin();
-      allow create: if owns(uid) && request.resource.data.role == 'customer';
-      allow update: if owns(uid) && request.resource.data.role == resource.data.role;
-      allow delete: if owns(uid) || isAdmin();
-      allow write: if isAdmin();
+      allow create: if owns(uid)
+        && request.resource.data.keys().hasOnly(['displayName','email','photoUrl','role','createdAt','updatedAt'])
+        && request.resource.data.email == request.auth.token.email
+        && (request.resource.data.role == 'customer' || (request.auth.token.role == 'artist' && request.resource.data.role == 'artist'));
+      allow update, delete: if false;
     }
     match /artists/{uid} {
-      allow read: if true;
-      allow update: if owns(uid) && isArtist() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName','bio','photoUrl','phone','whatsapp','specialties','location','updatedAt']);
-      allow write: if isAdmin();
+      allow read: if (resource.data.status == 'active' && resource.data.blocked == false) || owns(uid) || isAdmin();
+      allow write: if false;
+    }
+    match /artistPrivate/{uid} { allow read: if owns(uid) || isAdmin(); allow write: if false; }
+    match /artistApplications/{id} { allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid); allow write: if false; }
+    match /artworks/{artId} { allow read: if resource.data.status == 'published' || isAdmin() || (isActiveArtist() && resource.data.artistId == request.auth.uid); allow write: if false; }
+    match /artworkImages/{artId} {
+      allow read: if (exists(/databases/$(database)/documents/artworks/$(artId)) && get(/databases/$(database)/documents/artworks/$(artId)).data.status == 'published') || (isActiveArtist() && resource.data.artistId == request.auth.uid) || isAdmin();
+      allow write: if false;
     }
     match /orders/{orderId} {
-      allow create: if signedIn() && request.resource.data.buyerId == request.auth.uid;
-      allow read: if signedIn() && (resource.data.buyerId == request.auth.uid || resource.data.artistId == request.auth.uid) || isAdmin();
+      allow create: if false;
+      allow read: if (signedIn() && (resource.data.buyerId == request.auth.uid || resource.data.artistId == request.auth.uid)) || isAdmin();
       allow update: if isAdmin()
-        || (signedIn() && resource.data.artistId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','statusHistory','tracking','updatedAt']))
-        || (signedIn() && resource.data.buyerId == request.auth.uid && resource.data.status == 'delivered' && request.resource.data.status == 'received' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','receivedAt','updatedAt']));
-      allow delete: if isAdmin();
+        || (isActiveArtist()
+          && resource.data.artistId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','updatedAt'])
+          && validArtistTransition(resource.data.status, request.resource.data.status))
+        || (signedIn()
+          && resource.data.buyerId == request.auth.uid
+          && ((resource.data.status == 'delivered'
+              && request.resource.data.status == 'received'
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','receivedAt','updatedAt']))
+            || (resource.data.status == 'received'
+              && request.resource.data.status == 'received'
+              && resource.data.get('feedbackSubmitted', false) == false
+              && request.resource.data.feedbackSubmitted == true
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['feedbackSubmitted','updatedAt']))));
+      allow delete: if false;
     }
-    match /artistApplications/{id} { allow create: if signedIn() && request.resource.data.uid == request.auth.uid; allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid); allow update, delete: if isAdmin(); }
-    match /feedback/{id} { allow create: if signedIn() && request.resource.data.buyerId == request.auth.uid; allow read: if resource.data.status == 'approved' || isAdmin(); allow update, delete: if isAdmin(); }
+    match /feedback/{id} {
+      allow create: if signedIn()
+        && id == request.resource.data.orderId
+        && request.resource.data.keys().hasOnly(['orderId','buyerId','artistId','comment','service','artQuality','satisfaction','average','status','createdAt'])
+        && request.resource.data.buyerId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.comment is string
+        && request.resource.data.comment.size() > 0
+        && request.resource.data.comment.size() <= 1000
+        && request.resource.data.average is number
+        && request.resource.data.average >= 1
+        && request.resource.data.average <= 5
+        && validRating(request.resource.data['service'])
+        && validRating(request.resource.data.artQuality)
+        && validRating(request.resource.data.satisfaction)
+        && feedbackOrderIsEligible(request.resource.data.orderId, request.resource.data.artistId);
+      allow read: if resource.data.status == 'approved' || isAdmin() || (signedIn() && resource.data.buyerId == request.auth.uid);
+      allow update, delete: if false;
+    }
     match /counters/{id} { allow read: if signedIn(); allow write: if false; }
     match /{document=**} { allow read, write: if false; }
   }
 }
-
