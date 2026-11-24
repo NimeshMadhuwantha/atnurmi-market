@@ -8,9 +8,8 @@ import {
   signOut,
   type User,
 } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import type { Artwork } from "@/lib/data";
-import { firebaseAuth, firestore, requireFirebaseServices } from "@/lib/firebase-client";
+import { firebaseAuth, requireFirebaseServices } from "@/lib/firebase-client";
 
 type UserRole = "guest" | "customer" | "artist";
 type UserProfile = {
@@ -18,27 +17,24 @@ type UserProfile = {
   email?: string;
   photoUrl?: string;
   phone?: string;
+  optionalPhone?: string;
+  whatsapp?: string;
   role: "customer" | "artist";
 };
 
-async function saveUserProfile(nextUser: User, role: "customer" | "artist") {
-  if (!firestore) return null;
-
-  const userRef = doc(firestore, "users", nextUser.uid);
-  const existing = await getDoc(userRef);
-  const profile = {
+async function loadUserProfile(nextUser: User, role: "customer" | "artist") {
+  const response = await fetch("/api/account", {
+    cache: "no-store",
+    headers: { Authorization: `Bearer ${await nextUser.getIdToken()}` },
+  });
+  if (!response.ok) throw new Error("Unable to load the account profile.");
+  const result = await response.json() as { profile?: UserProfile };
+  return result.profile ?? {
     displayName: nextUser.displayName ?? "",
     email: nextUser.email ?? "",
     photoUrl: nextUser.photoURL ?? "",
     role,
-    updatedAt: serverTimestamp(),
   };
-
-  if (!existing.exists()) {
-    await setDoc(userRef, { ...profile, createdAt: serverTimestamp() });
-  }
-
-  return existing.exists() ? existing.data() as UserProfile : profile;
 }
 
 type AppState = {
@@ -112,11 +108,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const token = await nextUser.getIdTokenResult();
+        const token = await nextUser.getIdTokenResult(true);
         const nextRole = token.claims.role === "artist" ? "artist" as const : "customer" as const;
         setAccountRole(nextRole);
         setRole(nextRole);
-        setProfile(await saveUserProfile(nextUser, nextRole));
+        setProfile(await loadUserProfile(nextUser, nextRole));
       } catch (error) {
         console.error("Unable to load the Firebase user profile", error);
         setAccountRole("customer");

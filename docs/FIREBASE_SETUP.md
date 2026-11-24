@@ -162,10 +162,12 @@ Run this after the rules are deployed:
 2. Open `About Us -> Apply to the artist collective` and submit the verified details.
 3. Open `/NurAdm`, then approve the pending application.
 4. Sign out of the marketplace and sign in again so Firebase refreshes the `role: artist` custom claim.
-5. Open `My Arts`, upload three images, and publish an artwork.
+5. Open `My Arts`, choose all three gallery images (each original must be at most 1 MB), and publish. The browser converts them to WebP before the server validates and saves the listing.
 6. Confirm the listing appears in `Explore Arts` and its detail gallery opens.
 7. Edit the listing and confirm the updated fields appear publicly.
 8. Confirm artist dashboard counts and artist-directory details.
+
+Artwork publishing is handled by the server using Firebase Admin. It creates the artwork record in Firestore `artworks` and the gallery record in `artworkImages`; Firestore creates these collections on the first successful publish. No Firebase Storage bucket or manual collection creation is needed for the current Base64 approach. The three optimized gallery images are capped at 220 KB each so their Base64 data plus Firestore metadata stays below the 1 MiB per-document limit.
 
 Checkout/payment creation is intentionally not present yet, matching the project specification. Once payment is implemented, it must create the order on a trusted server route; client-side Firestore order creation is deliberately denied. The existing order delivery and moderated feedback lifecycle starts after a trusted order record exists.
 

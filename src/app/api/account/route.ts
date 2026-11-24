@@ -18,6 +18,16 @@ function isWebpDataUrl(value: string, maxBytes: number) {
   }
 }
 
+function isTrustedGooglePhotoUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:"
+      && (url.hostname === "googleusercontent.com" || url.hostname.endsWith(".googleusercontent.com"));
+  } catch {
+    return false;
+  }
+}
+
 function text(value: unknown, max: number) {
   return String(value ?? "").trim().slice(0, max);
 }
@@ -34,6 +44,35 @@ function cleanAddress(value: unknown) {
   };
 }
 
+export async function GET(request: Request) {
+  try {
+    const user = await requireFirebaseUser(request);
+    const [profileSnapshot, artistPrivateSnapshot] = await Promise.all([
+      adminDb.collection("users").doc(user.uid).get(),
+      user.role === "artist"
+        ? adminDb.collection("artistPrivate").doc(user.uid).get()
+        : Promise.resolve(null),
+    ]);
+    const stored = profileSnapshot.data() ?? {};
+    const artistPrivate = artistPrivateSnapshot?.data() ?? {};
+    return NextResponse.json({
+      profile: {
+        displayName: text(stored.displayName ?? user.name, 80),
+        email: user.email ?? "",
+        photoUrl: String(stored.photoUrl ?? user.picture ?? ""),
+        phone: text(stored.phone, 30),
+        optionalPhone: text(stored.optionalPhone, 30),
+        whatsapp: text(stored.whatsapp ?? artistPrivate.whatsapp, 30),
+        address: cleanAddress(stored.address),
+        role: user.role === "artist" ? "artist" : "customer",
+      },
+    });
+  } catch (error) {
+    console.error("Profile read failed", error);
+    return NextResponse.json({ error: "Unable to load your profile." }, { status: 401 });
+  }
+}
+
 export async function PATCH(request: Request) {
   if (!sameOrigin(request)) return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });
   try {
@@ -42,28 +81,39 @@ export async function PATCH(request: Request) {
     const displayName = text(body.displayName, 80);
     const phone = text(body.phone, 30);
     const optionalPhone = text(body.optionalPhone, 30);
+    const whatsapp = text(body.whatsapp, 30);
     const photoUrl = String(body.photoUrl ?? "");
     const phonePattern = /^$|^\+?[0-9 ()-]{9,24}$/;
 
     if (displayName.length < 2) return NextResponse.json({ error: "Enter a valid display name." }, { status: 400 });
-    if (!phonePattern.test(phone) || !phonePattern.test(optionalPhone)) return NextResponse.json({ error: "Enter valid phone numbers." }, { status: 400 });
-    if (photoUrl && !isWebpDataUrl(photoUrl, 100_000)) return NextResponse.json({ error: "Profile image must be a valid WebP below 100 KB." }, { status: 400 });
+    if (!phonePattern.test(phone) || !phonePattern.test(optionalPhone) || !phonePattern.test(whatsapp)) return NextResponse.json({ error: "Enter valid phone numbers." }, { status: 400 });
+    if (photoUrl && !isWebpDataUrl(photoUrl, 100_000) && !isTrustedGooglePhotoUrl(photoUrl)) {
+      return NextResponse.json({ error: "Profile image must be an optimized WebP or your Google profile photo." }, { status: 400 });
+    }
 
+    const address = cleanAddress(body.address);
     const profile = {
       displayName,
       email: user.email ?? "",
       photoUrl,
       phone,
       optionalPhone,
-      address: cleanAddress(body.address),
+      whatsapp,
+      address,
       role: user.role === "artist" ? "artist" : "customer",
       updatedAt: FieldValue.serverTimestamp(),
     };
-    await adminDb.collection("users").doc(user.uid).set(profile, { merge: true });
+    const batch = adminDb.batch();
+    batch.set(adminDb.collection("users").doc(user.uid), profile, { merge: true });
     if (user.role === "artist") {
-      await adminDb.collection("artists").doc(user.uid).set({ displayName, photoUrl, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      batch.set(adminDb.collection("artists").doc(user.uid), { displayName, photoUrl, whatsapp, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      batch.set(adminDb.collection("artistPrivate").doc(user.uid), { whatsapp, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     }
-    return NextResponse.json({ ok: true });
+    await batch.commit();
+    return NextResponse.json({
+      ok: true,
+      profile: { displayName, email: user.email ?? "", photoUrl, phone, optionalPhone, whatsapp, address, role: profile.role },
+    });
   } catch (error) {
     console.error("Profile update failed", error);
     return NextResponse.json({ error: "Unable to save your profile." }, { status: 500 });

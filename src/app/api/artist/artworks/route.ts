@@ -1,4 +1,4 @@
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, type DocumentData } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 import { requireFirebaseUser } from "@/lib/api-auth";
 import { sameOrigin } from "@/lib/admin-session";
@@ -6,15 +6,18 @@ import { adminDb } from "@/lib/firebase-admin";
 
 const CATEGORIES = ["Canvas Art", "Watercolour", "Colour Pencil", "Pencil Art", "Graphic Art", "Digital Art"];
 const DELIVERY_OPTIONS = ["Cash on delivery", "After full payment", "Global delivery", "Free delivery"];
+const MAX_ARTWORK_IMAGE_BYTES = 220_000;
+const MAX_THUMBNAIL_BYTES = 25_000;
 
 function text(value: unknown, max: number) {
   return String(value ?? "").trim().slice(0, max);
 }
 
 function isWebpDataUrl(value: string, maxBytes: number) {
-  if (!value.startsWith("data:image/webp;base64,")) return false;
+  const prefix = "data:image/webp;base64,";
+  if (!value.startsWith(prefix) || value.length > prefix.length + Math.ceil(maxBytes / 3) * 4) return false;
   try {
-    const bytes = Buffer.from(value.slice("data:image/webp;base64,".length), "base64");
+    const bytes = Buffer.from(value.slice(prefix.length), "base64");
     return bytes.length <= maxBytes
       && bytes.subarray(0, 4).toString("ascii") === "RIFF"
       && bytes.subarray(8, 12).toString("ascii") === "WEBP";
@@ -64,10 +67,10 @@ function imagesFrom(body: Record<string, unknown>, required: boolean) {
   if (!Array.isArray(body.images) && !required) return { data: null } as const;
   const images = Array.isArray(body.images) ? body.images.map(String) : [];
   const thumbnail = String(body.thumbnail ?? "");
-  if (images.length !== 3 || images.some((item) => !isWebpDataUrl(item, 100_000))) {
-    return { error: "Three valid WebP images below 100 KB each are required." } as const;
+  if (images.length !== 3 || images.some((item) => !isWebpDataUrl(item, MAX_ARTWORK_IMAGE_BYTES))) {
+    return { error: "Choose all three images as valid WebP files up to 220 KB each." } as const;
   }
-  if (!isWebpDataUrl(thumbnail, 25_000)) return { error: "The artwork thumbnail must be a valid WebP below 25 KB." } as const;
+  if (!isWebpDataUrl(thumbnail, MAX_THUMBNAIL_BYTES)) return { error: "The artwork thumbnail must be a valid WebP below 25 KB." } as const;
   return { data: { images, thumbnail } } as const;
 }
 
@@ -75,6 +78,42 @@ async function approvedArtist(uid: string) {
   const snapshot = await adminDb.collection("artists").doc(uid).get();
   if (!snapshot.exists || snapshot.data()?.blocked || snapshot.data()?.status !== "active") return null;
   return snapshot;
+}
+
+function artworkRow(id: string, value: DocumentData) {
+  return {
+    id,
+    name: text(value.name, 120),
+    artist: text(value.artistName, 100),
+    artistId: text(value.artistId, 128),
+    category: text(value.category, 40),
+    price: Number(value.price ?? 0),
+    size: text(value.size, 80),
+    medium: text(value.medium, 100),
+    materials: text(value.materials, 200),
+    rating: Number(value.rating ?? 0),
+    reviews: Number(value.reviewCount ?? 0),
+    delivery: text(value.deliveryLabel, 160),
+    deliveryOptions: Array.isArray(value.deliveryOptions) ? value.deliveryOptions.map(String) : [],
+    deliveryCharge: Number(value.deliveryCharge ?? 0),
+    description: text(value.description, 2_000),
+    note: text(value.note, 500),
+    imageUrls: value.thumbnailDataUrl ? [String(value.thumbnailDataUrl)] : [],
+  };
+}
+
+export async function GET(request: Request) {
+  try {
+    const user = await requireFirebaseUser(request);
+    if (user.role !== "artist") return NextResponse.json({ error: "Artist approval is required." }, { status: 403 });
+    const artist = await approvedArtist(user.uid);
+    if (!artist) return NextResponse.json({ error: "This artist account is unavailable." }, { status: 403 });
+    const snapshot = await adminDb.collection("artworks").where("artistId", "==", user.uid).limit(50).get();
+    return NextResponse.json({ artworks: snapshot.docs.map((item) => artworkRow(item.id, item.data())) });
+  } catch (error) {
+    console.error("Artist artwork read failed", error);
+    return NextResponse.json({ error: "Unable to load your artwork." }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {

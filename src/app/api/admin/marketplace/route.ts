@@ -13,7 +13,10 @@ function clean(value: unknown): unknown {
 }
 
 async function rows(collection: string) {
-  const snapshot = await adminDb.collection(collection).limit(250).get();
+  const ref = adminDb.collection(collection);
+  const snapshot = collection === "artworks"
+    ? await ref.orderBy("createdAt", "desc").limit(250).get()
+    : await ref.limit(250).get();
   return snapshot.docs.map((item) => ({ id: item.id, ...clean(item.data()) as object }));
 }
 
@@ -85,7 +88,7 @@ export async function POST(request: Request) {
         await adminAuth.setCustomUserClaims(uid, { ...user.customClaims, role: "artist" });
         const activation = adminDb.batch();
         activation.set(adminDb.collection("artists").doc(uid), { status: "active", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-        activation.set(adminDb.collection("users").doc(uid), { role: "artist", updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        activation.set(adminDb.collection("users").doc(uid), { role: "artist", whatsapp: application.whatsapp, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
         activation.update(ref, { status: "approved", approvedAt: FieldValue.serverTimestamp(), expiresAt: FieldValue.delete() });
         await activation.commit();
       } else {

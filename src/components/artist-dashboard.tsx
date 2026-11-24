@@ -1,12 +1,10 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { collection, doc, getDoc, getDocs, limit, query, where } from "firebase/firestore";
 import { ArtCard } from "./art-card";
 import { RoleSwitch } from "./role-switch";
 import { ArrowIcon, GridIcon, OrdersIcon, StarIcon } from "./icons";
 import { useApp } from "./app-provider";
-import { firestore } from "@/lib/firebase-client";
 import type { Artwork } from "@/lib/data";
 import { formatPrice } from "@/lib/data";
 
@@ -16,15 +14,39 @@ export function ArtistDashboard() {
   const [artworks, setArtworks] = useState<Artwork[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [profile, setProfile] = useState<Record<string, unknown>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   useEffect(() => {
-    if (!firestore || !user || accountRole !== "artist") return;
-    Promise.all([getDocs(query(collection(firestore, "artworks"), where("artistId", "==", user.uid), limit(50))), getDocs(query(collection(firestore, "orders"), where("artistId", "==", user.uid), limit(50))), getDoc(doc(firestore, "artists", user.uid))]).then(([artSnapshot, orderSnapshot, artistSnapshot]) => {
-      setArtworks(artSnapshot.docs.map((item) => { const data = item.data(); return { id: item.id, name: String(data.name), artist: String(data.artistName), artistId: String(data.artistId), category: String(data.category), price: Number(data.price), size: String(data.size), medium: String(data.medium), materials: String(data.materials), rating: Number(data.rating ?? 0), reviews: Number(data.reviewCount ?? 0), delivery: String(data.deliveryLabel), description: String(data.description), tone: "ocean", imageUrls: data.thumbnailDataUrl ? [String(data.thumbnailDataUrl)] : [] }; }));
-      setOrders(orderSnapshot.docs.map((item) => ({ id: item.id, status: String(item.data().status ?? "pending"), total: Number(item.data().total ?? 0), artworkName: String(item.data().artworkSnapshot?.name ?? "Artwork") })));
-      setProfile(artistSnapshot.data() ?? {});
-    });
+    if (!user || accountRole !== "artist") {
+      return;
+    }
+    let active = true;
+    async function load() {
+      setLoading(true);
+      setError("");
+      try {
+        const response = await fetch("/api/artist/dashboard", {
+          cache: "no-store",
+          headers: { Authorization: `Bearer ${await user!.getIdToken()}` },
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error ?? "Unable to load the artist dashboard.");
+        if (!active) return;
+        setArtworks((result.artworks ?? []).map((item: Artwork) => ({ ...item, tone: "ocean" })));
+        setOrders(result.orders ?? []);
+        setProfile(result.profile ?? {});
+      } catch (cause) {
+        if (active) setError(cause instanceof Error ? cause.message : "Unable to load the artist dashboard.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    void load();
+    return () => { active = false; };
   }, [user, accountRole]);
   if (!user || accountRole !== "artist") return <main className="page-main"><div className="empty-state"><h1>Artist access required</h1><p>Use the About Us page to request artist access.</p><Link className="button primary" href="/about#join">Request access</Link></div></main>;
+  if (loading) return <main className="page-main"><div className="empty-state"><h1>Loading artist dashboard…</h1></div></main>;
+  if (error) return <main className="page-main"><div className="empty-state"><h1>Dashboard unavailable</h1><p>{error}</p><button className="button primary" onClick={() => window.location.reload()}>Try again</button></div></main>;
   const active = orders.filter((item) => !["received", "cancelled"].includes(item.status));
   const earnings = orders.filter((item) => ["delivered", "received"].includes(item.status)).reduce((sum, item) => sum + item.total, 0);
   const artLimit = Number(profile.artworkLimit ?? 10);

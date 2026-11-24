@@ -18,6 +18,10 @@ export function Header() {
   const { role, user, profile, theme, toggleTheme, setAuthOpen, cart, wishlist } = useApp();
   const [open, setOpen] = useState(false);
   const links = role === "artist" ? artistLinks : customerLinks;
+  const displayName = (profile?.displayName || user?.displayName || "").trim();
+  const firstName = displayName.split(/\s+/)[0] || "My profile";
+  const avatarUrl = profile?.photoUrl || user?.photoURL || "";
+  const avatarFallback = (displayName || user?.email || "U")[0].toUpperCase();
 
   return (
     <header className="site-header">
@@ -31,7 +35,7 @@ export function Header() {
           <Link className="icon-button badge-wrap" href="/wishlist" aria-label="Wishlist"><HeartIcon />{wishlist.length > 0 && <b>{wishlist.length}</b>}</Link>
           <Link className="icon-button badge-wrap" href="/cart" aria-label="Cart"><CartIcon />{cart.length > 0 && <b>{cart.length}</b>}</Link>
         </>}
-        {role === "guest" ? <button className="signin-button" onClick={() => setAuthOpen(true)}><UserIcon size={18} /> <span>Sign in</span></button> : <Link href="/settings" className="profile-chip"><span>{profile?.photoUrl || user?.photoURL ? <img src={profile?.photoUrl || user?.photoURL || ""} alt=""/> : (profile?.displayName || user?.displayName || user?.email || "U")[0].toUpperCase()}</span><small>{profile?.displayName || user?.displayName || "My profile"}</small></Link>}
+        {role === "guest" ? <button className="signin-button" onClick={() => setAuthOpen(true)}><UserIcon size={18} /> <span>Sign in</span></button> : <Link href="/settings" className="profile-chip"><span>{avatarUrl ? <img src={avatarUrl} alt={`${displayName || "User"} profile`}/> : avatarFallback}</span><small>{firstName}</small></Link>}
         <button className="icon-button menu-button" onClick={() => setOpen(!open)} aria-label="Toggle menu">{open ? <XIcon /> : <MenuIcon />}</button>
       </div>
     </header>
