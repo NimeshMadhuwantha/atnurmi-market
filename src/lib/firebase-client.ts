@@ -3,7 +3,7 @@
 import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider, type AppCheck } from "firebase/app-check";
 import { getAuth, type Auth } from "firebase/auth";
-import { getFirestore, type Firestore } from "firebase/firestore";
+import { getFirestore, type Firestore } from "firebase/firestore/lite";
 import { firebaseConfig, isFirebaseConfigured } from "./firebase-config";
 
 /** Browser Firebase services, initialized once with the modular SDK. */

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, limit, orderBy, query, where } from "firebase/firestore";
+import { collection, getDocs, limit, orderBy, query, where } from "firebase/firestore/lite";
 import type { Artwork } from "@/lib/data";
 import { firestore } from "@/lib/firebase-client";
 

@@ -12,7 +12,7 @@ import {
   updateDoc,
   where,
   writeBatch,
-} from "firebase/firestore";
+} from "firebase/firestore/lite";
 import { ArrowIcon, CartIcon, HeartIcon, PackageIcon } from "./icons";
 import { useApp } from "./app-provider";
 import { firestore } from "@/lib/firebase-client";

@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore/lite";
 import { ArtCard } from "./art-card";
 import { ChevronDownIcon, FilterIcon, SearchIcon, XIcon } from "./icons";
 import { categories, formatPrice } from "@/lib/data";

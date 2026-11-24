@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { collection, getDocs, limit, query, where } from "firebase/firestore";
+import { collection, getDocs, limit, query, where } from "firebase/firestore/lite";
 import type { Artist } from "@/lib/data";
 import { firestore } from "@/lib/firebase-client";
 import { ImagePlaceholder } from "./image-placeholder";
