@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { CartIcon, HeartIcon, MenuIcon, MoonIcon, SunIcon, UserIcon, XIcon } from "./icons";
 import { useApp } from "./app-provider";
+import { BrandMark } from "./brand-mark";
 
 const customerLinks = [
   ["Home", "/"], ["Explore Arts", "/explore"], ["Artist Gigs", "/artist-gigs"],
@@ -25,7 +26,7 @@ export function Header() {
 
   return (
     <header className="site-header">
-      <Link href="/" className="brand" aria-label="Atnurmi Marketplace home"><span className="logo-gem" /><span>ATNURMI</span><small>MARKETPLACE</small></Link>
+      <Link href="/" className="brand" aria-label="Atnurmi Marketplace home"><BrandMark size={34} priority/><span>ATNURMI</span><small>MARKETPLACE</small></Link>
       <nav className={open ? "main-nav open" : "main-nav"} aria-label="Main navigation">
         {links.map(([label, href]) => <Link key={href} href={href} className={pathname === href ? "active" : ""} onClick={() => setOpen(false)}>{label}</Link>)}
       </nav>

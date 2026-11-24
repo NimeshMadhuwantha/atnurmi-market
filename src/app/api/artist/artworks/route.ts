@@ -67,8 +67,8 @@ function imagesFrom(body: Record<string, unknown>, required: boolean) {
   if (!Array.isArray(body.images) && !required) return { data: null } as const;
   const images = Array.isArray(body.images) ? body.images.map(String) : [];
   const thumbnail = String(body.thumbnail ?? "");
-  if (images.length !== 3 || images.some((item) => !isWebpDataUrl(item, MAX_ARTWORK_IMAGE_BYTES))) {
-    return { error: "Choose all three images as valid WebP files up to 220 KB each." } as const;
+  if (images.length < 1 || images.length > 3 || images.some((item) => !isWebpDataUrl(item, MAX_ARTWORK_IMAGE_BYTES))) {
+    return { error: "Add one main image and up to two optional detail images. Each image must be a valid WebP up to 220 KB." } as const;
   }
   if (!isWebpDataUrl(thumbnail, MAX_THUMBNAIL_BYTES)) return { error: "The artwork thumbnail must be a valid WebP below 25 KB." } as const;
   return { data: { images, thumbnail } } as const;
@@ -108,6 +108,15 @@ export async function GET(request: Request) {
     if (user.role !== "artist") return NextResponse.json({ error: "Artist approval is required." }, { status: 403 });
     const artist = await approvedArtist(user.uid);
     if (!artist) return NextResponse.json({ error: "This artist account is unavailable." }, { status: 403 });
+    const id = new URL(request.url).searchParams.get("id");
+    if (id) {
+      const [artwork, gallery] = await Promise.all([
+        adminDb.collection("artworks").doc(id).get(),
+        adminDb.collection("artworkImages").doc(id).get(),
+      ]);
+      if (!artwork.exists || artwork.data()?.artistId !== user.uid) return NextResponse.json({ error: "Artwork not found." }, { status: 404 });
+      return NextResponse.json({ images: Array.isArray(gallery.data()?.images) ? gallery.data()!.images.map(String).slice(0, 3) : [] });
+    }
     const snapshot = await adminDb.collection("artworks").where("artistId", "==", user.uid).limit(50).get();
     return NextResponse.json({ artworks: snapshot.docs.map((item) => artworkRow(item.id, item.data())) });
   } catch (error) {

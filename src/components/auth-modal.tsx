@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useApp } from "./app-provider";
-import { XIcon } from "./icons";
+import { GoogleIcon, XIcon } from "./icons";
+import { BrandMark } from "./brand-mark";
 
 function authErrorMessage(cause: unknown) {
   const code = typeof cause === "object" && cause && "code" in cause ? String(cause.code) : "";
@@ -38,15 +39,14 @@ export function AuthModal() {
   }
 
   return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && setAuthOpen(false)}>
-    <section className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+    <section className="auth-modal google-auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
       <button className="icon-button modal-close" onClick={() => setAuthOpen(false)} aria-label="Close sign in"><XIcon /></button>
-      <div className="auth-brand"><span className="logo-gem" /> ATNURMI</div>
-      <p className="eyebrow">ONE ACCOUNT FOR EVERYTHING</p>
-      <h2 id="auth-title">Continue with Google</h2>
-      <p className="muted">Use one Google account to collect art. Approved members automatically receive artist tools on the same account.</p>
-      <button className="google-button" disabled={busy} onClick={() => void signIn()}><span className="google-g">G</span> {busy ? "Connecting…" : "Continue with Google"}</button>
+      <div className="auth-brand"><BrandMark size={42}/><span><strong>ATNURMI</strong><small>ART MARKETPLACE</small></span></div>
+      <div className="google-auth-kicker"><GoogleIcon size={18}/> Google sign-in</div>
+      <h2 id="auth-title">Continue with <span className="google-wordmark" aria-label="Google"><i>G</i><i>o</i><i>o</i><i>g</i><i>l</i><i>e</i></span></h2>
+      <p className="auth-intro">One secure sign-in for your Atnurmi account.</p>
+      <button className="google-button" disabled={busy} onClick={() => void signIn()}><GoogleIcon size={20}/><span>{busy ? "Connecting…" : "Continue with Google"}</span></button>
       {error && <p className="admin-error" role="alert">{error}</p>}
-      <p className="terms">Artist access is requested from the About Us page and activated only after Atnurmi approval.</p>
     </section>
   </div>;
 }

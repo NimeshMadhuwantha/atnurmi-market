@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { collection, doc, getDocs, limit, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
+import { collection, doc, getDocs, limit, query, serverTimestamp, updateDoc, where } from "firebase/firestore/lite";
 import { useApp } from "./app-provider";
 import { firestore } from "@/lib/firebase-client";
 import { formatPrice } from "@/lib/data";

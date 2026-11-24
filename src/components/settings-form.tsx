@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useApp } from "./app-provider";
 import { CameraIcon, MoonIcon, SunIcon, TrashIcon, XIcon } from "./icons";
 import { optimizeProfileDataUrl } from "@/lib/image-optimizer";
+import { RoleSwitch } from "./role-switch";
 
 type Address = {
   line1?: string;
@@ -20,6 +21,7 @@ type Profile = {
   phone: string;
   optionalPhone: string;
   whatsapp: string;
+  birthday: string;
   photoUrl: string;
   address: Address;
 };
@@ -29,6 +31,7 @@ const blankProfile = (): Profile => ({
   phone: "",
   optionalPhone: "",
   whatsapp: "",
+  birthday: "",
   photoUrl: "",
   address: { country: "Sri Lanka" },
 });
@@ -42,6 +45,7 @@ export function SettingsForm() {
   const [messageLocation, setMessageLocation] = useState<"profile" | "address">("profile");
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [activeSection, setActiveSection] = useState("profile");
 
   useEffect(() => {
     if (!user) {
@@ -66,6 +70,7 @@ export function SettingsForm() {
           phone: String(saved.phone ?? ""),
           optionalPhone: String(saved.optionalPhone ?? ""),
           whatsapp: String(saved.whatsapp ?? ""),
+          birthday: String(saved.birthday ?? ""),
           photoUrl: String(saved.photoUrl ?? user!.photoURL ?? ""),
           address: { ...blankProfile().address, ...(saved.address ?? {}) },
         });
@@ -79,6 +84,19 @@ export function SettingsForm() {
     void loadProfile();
     return () => { active = false; };
   }, [user, accountRole]);
+
+  useEffect(() => {
+    const sections = ["profile", "address", "appearance", "security"]
+      .map((id) => document.getElementById(id))
+      .filter((section): section is HTMLElement => Boolean(section));
+    if (!sections.length) return;
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      if (visible[0]) setActiveSection(visible[0].target.id);
+    }, { rootMargin: "-18% 0px -62% 0px", threshold: [0, 0.15] });
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, [loading]);
 
   async function save(location: "profile" | "address") {
     if (!user) return setAuthOpen(true);
@@ -154,18 +172,20 @@ export function SettingsForm() {
   const avatarFallback = (profile.displayName || user.email || "U").trim()[0]?.toUpperCase() ?? "U";
 
   return <>
+    {accountRole === "artist" && <div className="settings-role-bar"><div><p className="eyebrow">VIEW MODE</p><p>Choose how Atnurmi appears while you browse.</p></div><RoleSwitch/></div>}
     <div className="settings-layout">
-      <aside className="settings-nav"><a href="#profile" className="active">Profile details</a><a href="#address">Delivery address</a><a href="#appearance">Appearance</a><a href="#security">Account & security</a></aside>
+      <aside className="settings-nav" aria-label="Settings sections">{[["profile", "Profile details"], ["address", "Delivery address"], ["appearance", "Appearance"], ["security", "Account & security"]].map(([id, label]) => <a key={id} href={`#${id}`} className={activeSection === id ? "active" : ""} aria-current={activeSection === id ? "location" : undefined} onClick={() => setActiveSection(id)}>{label}</a>)}</aside>
       <div className="settings-content">
         <section id="profile" className="settings-card">
-          <div className="settings-title"><div><p className="eyebrow">YOUR IDENTITY</p><h2>Profile details</h2></div><span className="status-pill">{role === "artist" ? "Artist view" : "Collector view"}</span></div>
-          <div className="profile-upload"><div>{profile.photoUrl ? <img src={profile.photoUrl} alt={`${profile.displayName || "User"} profile`}/> : avatarFallback}</div><label className="button outline"><CameraIcon size={17}/> Change photo<input hidden type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void photo(event.target.files?.[0])}/></label><p>JPG, PNG, or WebP up to 12 MB. Saved as an optimized WebP.</p></div>
+          <div className="settings-title"><div><p className="eyebrow">YOUR IDENTITY</p><h2>Profile details</h2></div><span className="status-pill">{role === "artist" ? "Artist view" : "User view"}</span></div>
+          <div className="profile-upload"><label className="profile-photo-editor" aria-label="Change profile photo"><span>{profile.photoUrl ? <img src={profile.photoUrl} alt={`${profile.displayName || "User"} profile`}/> : avatarFallback}</span><i><CameraIcon size={15}/></i><input hidden type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => void photo(event.target.files?.[0])}/></label><p>JPG, PNG, or WebP up to 1 MB. Tap the edit icon to change your photo.</p></div>
           <div className="form-grid">
             <label>Display name<input value={profile.displayName} onChange={(event) => field("displayName", event.target.value)}/></label>
             <label>Email address<input value={user.email ?? ""} disabled/></label>
             <label>Main mobile number<input type="tel" autoComplete="tel" value={profile.phone} onChange={(event) => field("phone", event.target.value)}/></label>
             <label>Optional mobile number<input type="tel" value={profile.optionalPhone} onChange={(event) => field("optionalPhone", event.target.value)}/></label>
-            <label className="full">{accountRole === "artist" ? "WhatsApp number (public artist contact)" : "WhatsApp number"}<input type="tel" autoComplete="tel" placeholder="+94 7X XXX XXXX" value={profile.whatsapp} onChange={(event) => field("whatsapp", event.target.value)}/></label>
+            <label className="full">{role === "artist" ? "WhatsApp number (public artist contact)" : "WhatsApp number"}<input type="tel" autoComplete="tel" placeholder="+94 7X XXX XXXX" value={profile.whatsapp} onChange={(event) => field("whatsapp", event.target.value)}/></label>
+            {role === "artist" && <label className="full">Birthday<input type="date" value={profile.birthday} onChange={(event) => field("birthday", event.target.value)}/></label>}
             <button className="button primary" disabled={busy} type="button" onClick={() => void save("profile")}>{busy ? "Saving…" : "Save profile"}</button>
             {message && messageLocation === "profile" && <p className="image-status full" role="status">{message}</p>}
           </div>

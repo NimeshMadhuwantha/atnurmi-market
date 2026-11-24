@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, limit, orderBy, query, where } from "firebase/firestore";
+import { collection, getDocs, limit, orderBy, query, where } from "firebase/firestore/lite";
 import type { Artwork } from "@/lib/data";
 import { firestore } from "@/lib/firebase-client";
 
@@ -36,6 +36,7 @@ export function useArtworks() {
           rating: Number(fields.rating ?? 0),
           reviews: Number(fields.reviewCount ?? 0),
           delivery: String(fields.deliveryLabel ?? "Delivery available"),
+          deliveryCharge: Number(fields.deliveryCharge ?? 0),
           description: String(fields.description ?? ""),
           tone: "ocean",
           note: fields.note ? String(fields.note) : undefined,

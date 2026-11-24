@@ -1,9 +1,9 @@
-const MAX_INPUT_BYTES = 12_000_000;
+const MAX_INPUT_BYTES = 1_000_000;
 const MAX_ARTWORK_INPUT_BYTES = 1_000_000;
 const ARTWORK_TARGET_BYTES = 220_000;
 
 async function optimize(file: File, maxDimension: number, targetBytes: number, maxInputBytes = MAX_INPUT_BYTES): Promise<File> {
-  if (file.size > maxInputBytes) throw new Error(`Image must be ${maxInputBytes === MAX_ARTWORK_INPUT_BYTES ? "1 MB" : "12 MB"} or smaller.`);
+  if (file.size > maxInputBytes) throw new Error("Image must be 1 MB or smaller.");
   if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error("Choose a JPG, PNG, or WebP image.");
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
