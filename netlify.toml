@@ -2,7 +2,7 @@
   command = "npm run build"
   publish = ".next"
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "24"
 [[headers]]
   for = "/_next/static/*"
   [headers.values]

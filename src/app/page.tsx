@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ImagePlaceholder } from "@/components/image-placeholder";
-import { ArrowIcon, CheckIcon, StarIcon } from "@/components/icons";
+import { ArrowIcon, CheckIcon } from "@/components/icons";
 import { FeaturedArtworks } from "@/components/featured-artworks";
 
 const categoryDetails = [
@@ -16,7 +16,6 @@ export default function Home() {
       <section className="hero">
         <div className="hero-art" aria-hidden="true"><div className="hero-shape shape-one"/><div className="hero-shape shape-two"/><div className="hero-shape shape-three"/><div className="hero-grid"/></div>
         <div className="hero-content"><p className="eyebrow">CURATED ORIGINALS · DIRECT FROM ARTISTS</p><h1>Art that makes<br />a space <em>your own.</em></h1><p className="hero-copy">Discover original pieces and thoughtful commissions by independent artists—created with care and delivered safely to your door.</p><div className="hero-actions"><Link href="/explore" className="button primary large">Explore original art <ArrowIcon size={18}/></Link><Link href="/artist-gigs" className="text-link">Commission an artist <span>↗</span></Link></div><div className="hero-trust"><span><CheckIcon size={15}/> Artist-verified originals</span><span><CheckIcon size={15}/> Safe delivery</span><span><CheckIcon size={15}/> Sri Lanka & worldwide</span></div></div>
-        <div className="arrival-toast"><span className="arrival-thumb tone-garden"/><div><small>JUST ARRIVED</small><strong>Garden After Rain</strong><span>Watercolour · by Savi</span></div><Link href="/explore?art=garden-after-rain">View</Link></div>
         <div className="hero-index"><span>01</span><i/><span>05</span></div>
       </section>
 
@@ -28,7 +27,7 @@ export default function Home() {
 
       <section className="section digital-section"><div className="section-heading centered"><p className="eyebrow">DIGITAL, BUT DEEPLY PERSONAL</p><h2>Imagination without a frame.</h2><p>Custom character art, concepts, wallpapers, and digital portraits—made around your story.</p></div><div className="digital-showcase"><ImagePlaceholder label="Digital character concept" tone="orbit"/><div className="digital-card"><span className="small-number">ATN / 05</span><h3>Bring a world<br/>to life.</h3><p>Work one-to-one with a digital artist to shape characters, environments, and visual ideas.</p><Link href="/artist-gigs" className="button primary">Contact a digital artist <ArrowIcon size={17}/></Link></div><ImagePlaceholder label="Digital landscape artwork" tone="ocean"/></div></section>
 
-      <section className="proof-strip"><div><strong><StarIcon/> 4.9</strong><span>collector rating</span></div><div><strong>Original</strong><span>artist-made work</span></div><div><strong>Protected</strong><span>careful packaging</span></div><div><strong>Global</strong><span>delivery available</span></div></section>
+      <section className="proof-strip"><div><strong>Approved</strong><span>artist applications reviewed</span></div><div><strong>Original</strong><span>artist-made work</span></div><div><strong>Protected</strong><span>careful packaging</span></div><div><strong>Global</strong><span>delivery available</span></div></section>
     </main>
   );
 }

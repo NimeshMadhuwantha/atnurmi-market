@@ -7,6 +7,6 @@ export const firebaseConfig = {
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? "",
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? "",
 };
-export const isFirebaseConfigured = Object.values(firebaseConfig).every(Boolean);
+export const isFirebaseConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId && firebaseConfig.appId);
 export const collectionNames = { users:"users", artists:"artists", artworks:"artworks", orders:"orders", artistApplications:"artistApplications", feedback:"feedback", counters:"counters" } as const;
 
