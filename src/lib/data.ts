@@ -11,6 +11,7 @@ export type Artwork = {
   rating: number;
   reviews: number;
   delivery: string;
+  deliveryCharge?: number;
   description: string;
   tone: string;
   note?: string;

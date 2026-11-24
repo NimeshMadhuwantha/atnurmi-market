@@ -63,6 +63,7 @@ export async function GET(request: Request) {
         phone: text(stored.phone, 30),
         optionalPhone: text(stored.optionalPhone, 30),
         whatsapp: text(stored.whatsapp ?? artistPrivate.whatsapp, 30),
+        ...(user.role === "artist" ? { birthday: text(stored.birthday ?? artistPrivate.dateOfBirth, 10) } : {}),
         address: cleanAddress(stored.address),
         role: user.role === "artist" ? "artist" : "customer",
       },
@@ -82,11 +83,13 @@ export async function PATCH(request: Request) {
     const phone = text(body.phone, 30);
     const optionalPhone = text(body.optionalPhone, 30);
     const whatsapp = text(body.whatsapp, 30);
+    const birthday = user.role === "artist" ? text(body.birthday, 10) : "";
     const photoUrl = String(body.photoUrl ?? "");
     const phonePattern = /^$|^\+?[0-9 ()-]{9,24}$/;
 
     if (displayName.length < 2) return NextResponse.json({ error: "Enter a valid display name." }, { status: 400 });
     if (!phonePattern.test(phone) || !phonePattern.test(optionalPhone) || !phonePattern.test(whatsapp)) return NextResponse.json({ error: "Enter valid phone numbers." }, { status: 400 });
+    if (birthday && !/^\d{4}-\d{2}-\d{2}$/.test(birthday)) return NextResponse.json({ error: "Enter a valid birthday." }, { status: 400 });
     if (photoUrl && !isWebpDataUrl(photoUrl, 100_000) && !isTrustedGooglePhotoUrl(photoUrl)) {
       return NextResponse.json({ error: "Profile image must be an optimized WebP or your Google profile photo." }, { status: 400 });
     }
@@ -99,6 +102,7 @@ export async function PATCH(request: Request) {
       phone,
       optionalPhone,
       whatsapp,
+      ...(user.role === "artist" ? { birthday } : {}),
       address,
       role: user.role === "artist" ? "artist" : "customer",
       updatedAt: FieldValue.serverTimestamp(),
@@ -107,12 +111,12 @@ export async function PATCH(request: Request) {
     batch.set(adminDb.collection("users").doc(user.uid), profile, { merge: true });
     if (user.role === "artist") {
       batch.set(adminDb.collection("artists").doc(user.uid), { displayName, photoUrl, whatsapp, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-      batch.set(adminDb.collection("artistPrivate").doc(user.uid), { whatsapp, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      batch.set(adminDb.collection("artistPrivate").doc(user.uid), { whatsapp, dateOfBirth: birthday, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     }
     await batch.commit();
     return NextResponse.json({
       ok: true,
-      profile: { displayName, email: user.email ?? "", photoUrl, phone, optionalPhone, whatsapp, address, role: profile.role },
+      profile: { displayName, email: user.email ?? "", photoUrl, phone, optionalPhone, whatsapp, ...(user.role === "artist" ? { birthday } : {}), address, role: profile.role },
     });
   } catch (error) {
     console.error("Profile update failed", error);

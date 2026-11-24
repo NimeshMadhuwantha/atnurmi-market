@@ -36,6 +36,7 @@ export function useArtworks() {
           rating: Number(fields.rating ?? 0),
           reviews: Number(fields.reviewCount ?? 0),
           delivery: String(fields.deliveryLabel ?? "Delivery available"),
+          deliveryCharge: Number(fields.deliveryCharge ?? 0),
           description: String(fields.description ?? ""),
           tone: "ocean",
           note: fields.note ? String(fields.note) : undefined,

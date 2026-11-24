@@ -44,6 +44,7 @@ export async function GET(request: Request) {
           rating: Number(data.rating ?? 0),
           reviews: Number(data.reviewCount ?? 0),
           delivery: text(data.deliveryLabel),
+          deliveryCharge: Number(data.deliveryCharge ?? 0),
           description: text(data.description),
           imageUrls: data.thumbnailDataUrl ? [String(data.thumbnailDataUrl)] : [],
         };

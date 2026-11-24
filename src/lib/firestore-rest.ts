@@ -24,6 +24,7 @@ export function artworkFromDocument(document: FirestoreDocument): Artwork {
     category: String(fields.category ?? "Original Art"), price: Number(fields.price ?? 0), size: String(fields.size ?? "Size on request"),
     medium: String(fields.medium ?? "Mixed media"), materials: String(fields.materials ?? "Artist materials"),
     rating: Number(fields.rating ?? 0), reviews: Number(fields.reviewCount ?? 0), delivery: String(fields.deliveryLabel ?? "Delivery available"),
+    deliveryCharge: Number(fields.deliveryCharge ?? 0),
     description: String(fields.description ?? ""), tone: "ocean", note: fields.note ? String(fields.note) : undefined,
     imageUrls: thumbnail ? [thumbnail] : [],
   };
